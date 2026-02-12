@@ -1,82 +1,30 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { getFrequencyData, createFileInput } from './audio.js';
 
+// Create 3D scene, camera, and renderer
 const scene = new THREE.Scene();
 const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerHeight, 0.1, 1000);
-
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
 
+// Add camera controls so you can look around
 const controls = new OrbitControls(camera, renderer.domElement);
 controls.enableDamping = true;
 controls.dampingFactor = 0.05;
 
-let audioContext;
-let analyser;
-let audioSource;
-let frequencyData;
-const bufferLength = 256;
-
-function initAudio() {
-    audioContext = new (window.AudioContext || window.webkitAudioContext)();
-    analyser = audioContext.createAnalyser();
-    analyser.fftSize = bufferLength * 2;
-    analyser.smoothingTimeConstant = 0.8;
-    
-    frequencyData = new Uint8Array(analyser.frequencyBinCount);
-}
-
-async function loadAudio(file) {
-    if (!audioContext) {
-        initAudio();
-    }
-    
-    if (audioSource) {
-        audioSource.stop();
-    }
-    
-    const arrayBuffer = await file.arrayBuffer();
-    const audioBuffer = await audioContext.decodeAudioData(arrayBuffer);
-    
-    audioSource = audioContext.createBufferSource();
-    audioSource.buffer = audioBuffer;
-    audioSource.connect(analyser);
-    analyser.connect(audioContext.destination);
-    
-    audioSource.start(0);
-}
-
-function getFrequencyData() {
-    if (analyser) {
-        analyser.getByteFrequencyData(frequencyData);
-    }
-    return frequencyData;
-}
-
-const fileInput = document.createElement('input');
-fileInput.type = 'file';
-fileInput.accept = 'audio/*';
-fileInput.style.position = 'fixed';
-fileInput.style.top = '10px';
-fileInput.style.left = '10px';
-fileInput.style.zIndex = '1000';
-fileInput.addEventListener('change', (e) => {
-    const file = e.target.files[0];
-    if (file) {
-        loadAudio(file);
-    }
-});
-document.body.appendChild(fileInput);
+// Create file input for audio
+createFileInput();
 
 // Create frequency bars
 const bars = [];
-const barCount = 64; // Number of bars to display
-const radius = 5; // Radius of the circle
+const barCount = 64;
+const radius = 5;
 const barWidth = 0.1;
-const barDepth = 0.1;
+const barDepth = 0.25;
 
-// Create bars arranged in a circle
+// Create bars arranged in a circle, color them, rotate them inward
 for (let i = 0; i < barCount; i++) {
     const angle = (i / barCount) * Math.PI * 2;
     const x = Math.cos(angle) * radius;
@@ -89,30 +37,32 @@ for (let i = 0; i < barCount; i++) {
     
     const bar = new THREE.Mesh(geometry, material);
     bar.position.set(x, 0, z);
-    bar.lookAt(0, 0, 0); // Make bars face the center
-    bar.rotation.y += Math.PI / 2; // Rotate to stand upright
+    bar.lookAt(0, 0, 0);
+    bar.rotation.y += Math.PI / 2;
     
     scene.add(bar);
     bars.push(bar);
 }
 
-// Add lighting
+// Add ambient and directional lights
 const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
 scene.add(ambientLight);
-
 const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
 directionalLight.position.set(5, 10, 5);
 scene.add(directionalLight);
 
+// Set camera position and look at the origin
 camera.position.set(0, 8, 12);
 camera.lookAt(0, 0, 0);
 
+// Update camera aspect ratio when window is resized
 window.addEventListener('resize', () => {
     camera.aspect = window.innerWidth / window.innerHeight;
     camera.updateProjectionMatrix();
     renderer.setSize(window.innerWidth, window.innerHeight);
 });
 
+// Animate the scence
 function animate() {
     const frequencies = getFrequencyData();
     
