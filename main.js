@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { getFrequencyData, createFileInput } from './audio.js';
+import { loadBackground } from './background.js';
 
 // Create 3D scene, camera, and renderer
 const scene = new THREE.Scene();
@@ -8,6 +9,9 @@ const camera = new THREE.PerspectiveCamera(75, window.innerWidth / window.innerH
 const renderer = new THREE.WebGLRenderer();
 renderer.setSize( window.innerWidth, window.innerHeight);
 document.body.appendChild(renderer.domElement);
+
+// Load background image
+loadBackground(scene);
 
 // Add camera controls so you can look around
 const controls = new OrbitControls(camera, renderer.domElement);
